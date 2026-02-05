@@ -7,13 +7,21 @@ let socket;
 
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM is loaded');
-  chatContainer = document.getElementById("chat-container")
+  chatContainer = document.getElementById("chat-container");
   getMessages();
-  socket = connectWebSocket()
-  name = prompt("Enter name: ")
+  name = getName();
+  socket = connectWebSocket();
 });
 
 
+function getName() {
+  let name = localStorage.getItem("username");
+  if (!name) {
+    name = prompt("Enter name:");
+    localStorage.setItem("username", name);
+  }
+  return name;
+}
 
 function createChat(data){
   for(let i = 0; i < data.length; i++) {
@@ -41,12 +49,16 @@ function createChatBox(name, message) {
 
 function connectWebSocket() {
   const socket = new WebSocket(ws_url + "/ws");
+
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     console.log("New message:", data);
     createChatBox(data.user, data.message)
   };
-  socket.onopen = () => console.log("WebSocket connected");
+  socket.onopen = () => {
+    console.log("WebSocket connected");
+    socket.send(JSON.stringify({user: name, message: "__joined__"}))
+  };
   return socket;
 }
 
