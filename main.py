@@ -23,12 +23,11 @@ chat_log.append(Message(user="Test", message="Testing"))
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
-        self.usernames: dict[WebSocket, str] = {}
         self.user_sockets: dict[str, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, username: str):
         self.active_connections.append(websocket)
-        self.usernames[websocket] = username
+
         if username not in self.user_sockets:
             self.user_sockets[username] = set()
         self.user_sockets[username].add(websocket)
@@ -41,10 +40,8 @@ class ConnectionManager:
 
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
-        self.usernames.pop(websocket, None)
 
         # Remove socket from username mapping
-
         for username, sockets in list(self.user_sockets.items()):
             sockets.discard(websocket)
             if not sockets:
