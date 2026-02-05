@@ -24,14 +24,34 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
         self.usernames: dict[WebSocket, str] = {}
+        self.user_sockets: dict[str, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, username: str):
         self.active_connections.append(websocket)
         self.usernames[websocket] = username
+        if username not in self.user_sockets:
+            self.user_sockets[username] = set()
+        self.user_sockets[username].add(websocket)
+
+        # Only broadcast if first connection for this username
+        if len(self.user_sockets[username]) == 1:
+            await self.broadcast(
+                {"user": "System", "message": f"{username} has joined the chat"}
+            )
 
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
         self.usernames.pop(websocket, None)
+
+        # Remove socket from username mapping
+
+        for username, sockets in list(self.user_sockets.items()):
+            sockets.discard(websocket)
+            if not sockets:
+                # Last socket for this user disconnected
+                del self.user_sockets[username]
+                return username  # return for leave message
+        return None
 
     async def broadcast(self, message: dict):
         for connection in self.active_connections:
@@ -60,15 +80,13 @@ async def websocket_endpoint(websocket: WebSocket):
         username = init_data.get("user", "Anonymous")
         await manager.connect(websocket, username)
 
-        await manager.broadcast(
-            {"user": "System", "message": f"{username} has joined the chat"}
-        )
         while True:
             data = await websocket.receive_json()
             chat_log.append(data)
             await manager.broadcast(data)
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
-        await manager.broadcast(
-            {"user": "System", "message": f"{username} has left the chat"}
-        )
+        left_username = manager.disconnect(websocket)
+        if left_username:
+            await manager.broadcast(
+                {"user": "System", "message": f"{left_username} has left the chat"}
+            )

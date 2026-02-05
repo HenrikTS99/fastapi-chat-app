@@ -11,6 +11,12 @@
   display: flex;
   margin-bottom: 5px;
 }
+
+.chat-row.system {
+  font-style: italic;
+  color: gray; 
+}
+
 .name-container {
   font-weight: bold;
   margin-right: 5px;

@@ -16,8 +16,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function getName() {
   let name = localStorage.getItem("username");
-  if (!name) {
+  if (!name || name === "null") {
     name = prompt("Enter name:");
+    if (!name) {
+      name = "Anonymous";
+    }
     localStorage.setItem("username", name);
   }
   return name;
@@ -31,7 +34,7 @@ function createChat(data){
 
 function createChatBox(name, message) {
   const chatBoxDiv = document.createElement("div");
-  chatBoxDiv.className ="chat-row";
+  chatBoxDiv.className = name === "System" ? "chat-row system" : "chat-row";
 
   const nameContainer = document.createElement("div");
   nameContainer.className = "name-container";
