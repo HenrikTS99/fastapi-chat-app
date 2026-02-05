@@ -1,28 +1,27 @@
-let server_url = "http://127.0.0.1:8000" 
+let server_url = "http://127.0.0.1:8000";
+let ws_url = "ws://127.0.0.1:8000";
 let chatContainer;
-let name= "Christian";
+let name;
+let socket;
 
 
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM is loaded');
   chatContainer = document.getElementById("chat-container")
   getMessages();
-  console.log("hwdgygad")
+  socket = connectWebSocket()
+  name = prompt("Enter name: ")
 });
 
 
 
 function createChat(data){
   for(let i = 0; i < data.length; i++) {
-    console.log(data[i])
     createChatBox(data[i].user, data[i].message);
-    console.log(data[i].user + data[i].message)
-
   }
 }
 
 function createChatBox(name, message) {
-  console.log(name + message);
   const chatBoxDiv = document.createElement("div");
   chatBoxDiv.className ="chat-row";
 
@@ -37,33 +36,41 @@ function createChatBox(name, message) {
   chatBoxDiv.append(nameContainer);
   chatBoxDiv.append(messageContainer);
   chatContainer.append(chatBoxDiv);
-
-
 }
+
+
+function connectWebSocket() {
+  const socket = new WebSocket(ws_url + "/ws");
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log("New message:", data);
+    createChatBox(data.user, data.message)
+  };
+  socket.onopen = () => console.log("WebSocket connected");
+  return socket;
+}
+
 
 function submitMessage() {
+  if(!name) {
+    alert("Warning! You need a name to send messages. refresh browser.")
+    return;
+  }
+  if(!socket) {
+    alert("Error: No websocket is connected.")
+    return;
+  }
   let messageInput = document.getElementById("message-input");
   let message = messageInput.value;
-  createChatBox(name, message);
   messageInput.value = "";
-  postMessage(name, message);
+  socket.send(
+    JSON.stringify({
+      user: name,
+      message: message
+    })
+  )
 }
 
-
-function postMessage(name, message) {
-  fetch(server_url + "/message", {
-    method: "POST",
-    headers: {
-      'Content-type': 'application/json'
-    },
-    body: JSON.stringify(
-      {
-        user: name,
-        message: message
-      }
-    )
-  })
-}
 
 function getMessages() {
   fetch(server_url + "/messages")
@@ -76,7 +83,6 @@ function getMessages() {
     .then(data => createChat(data))
     .catch(error => console.error(error));
 }
-
 
 // For comparison purposes
 async function getMessagesAwait() {
@@ -93,4 +99,20 @@ async function getMessagesAwait() {
   catch(error){
     console.error(error)
   }
+}
+
+// No longer used, keeping for reference
+function postMessage(name, message) {
+  fetch(server_url + "/message", {
+    method: "POST",
+    headers: {
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify(
+      {
+        user: name,
+        message: message
+      }
+    )
+  })
 }
