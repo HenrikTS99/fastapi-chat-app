@@ -1,0 +1,21 @@
+#chat-container {
+  width: 400px;
+  height: 300px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  overflow-y: auto;  /* scroll when needed */
+  font-family: sans-serif;
+  background-color: #f9f9f9;
+}
+.chat-row {
+  display: flex;
+  margin-bottom: 5px;
+}
+.name-container {
+  font-weight: bold;
+  margin-right: 5px;
+}
+.message-container {
+  flex: 1;
+}
+
