@@ -17,12 +17,18 @@ document.addEventListener('DOMContentLoaded', function() {
 function getName() {
   let name = localStorage.getItem("username");
   if (!name || name === "null") {
-    name = prompt("Enter name:");
-    if (!name) {
-      name = "Anonymous";
-    }
-    localStorage.setItem("username", name);
+    name = changeName();
   }
+  return name;
+}
+
+
+function changeName() {
+  name = prompt("Enter name:");
+  if (!name) {
+    name = "Anonymous";
+  }
+  localStorage.setItem("username", name);
   return name;
 }
 
@@ -77,6 +83,7 @@ function submitMessage() {
   }
   let messageInput = document.getElementById("message-input");
   let message = messageInput.value;
+  if (message === "") { return; }
   messageInput.value = "";
   socket.send(
     JSON.stringify({
