@@ -2,22 +2,37 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import datetime
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+import sqlite3
+
+
+def init_db():
+    with sqlite3.connect("chat.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user TEXT NOT NULL,
+                message TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        conn.commit()
+
+
+init_db()
+
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
-chat_log = []
 
 
 class Message(BaseModel):
     user: str
     message: str
     timestamp: datetime.datetime = datetime.datetime.now(datetime.UTC)
-
-
-chat_log.append(Message(user="Test", message="Testing"))
 
 
 class ConnectionManager:
@@ -65,7 +80,7 @@ def root():
 
 @app.get("/messages")
 def get_messages():
-    return chat_log
+    return load_messages()
 
 
 @app.websocket("/ws")
@@ -79,7 +94,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
         while True:
             data = await websocket.receive_json()
-            chat_log.append(data)
+            print(data)
+            save_message(data["user"], data["message"])
             await manager.broadcast(data)
     except WebSocketDisconnect:
         left_username = manager.disconnect(websocket)
@@ -87,3 +103,22 @@ async def websocket_endpoint(websocket: WebSocket):
             await manager.broadcast(
                 {"user": "System", "message": f"{left_username} has left the chat"}
             )
+
+
+def save_message(user, message):
+    with sqlite3.connect("chat.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO messages (user, message) VALUES(?, ?)", (user, message)
+        )
+        conn.commit()
+
+
+def load_messages():
+    with sqlite3.connect("chat.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user, message FROM messages ORDER BY id DESC LIMIT 50")
+        rows = cursor.fetchall()
+
+    messages = [{"user": user, "message": message} for user, message in rows]
+    return messages[::-1]
