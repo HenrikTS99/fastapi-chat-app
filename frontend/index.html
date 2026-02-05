@@ -15,13 +15,12 @@
         <div class="message-container">Message</div>
       </div>
     </div>
-    <form action="/submit_message" method="post">
+
     <div id="message-input-container">
       <label for="message-input">Write a message! </label>
-      <input type="text" name="message-input">
-      <button type="submit">Send</button>
+      <input type="text" id="message-input" name="message-input">
+      <button onClick="submitMessage()">Send</button>
     </div>
-    </form>
   </main>
 </body>
 </html>

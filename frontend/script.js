@@ -1,5 +1,7 @@
 let server_url = "http://127.0.0.1:8000" 
 let chatContainer;
+let name= "Christian";
+
 
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM is loaded');
@@ -26,7 +28,7 @@ function createChatBox(name, message) {
 
   const nameContainer = document.createElement("div");
   nameContainer.className = "name-container";
-  nameContainer.textContent = name;
+  nameContainer.textContent = name + ":";
   
   const messageContainer = document.createElement("div");
   messageContainer.className = "message-container";
@@ -39,12 +41,35 @@ function createChatBox(name, message) {
 
 }
 
+function submitMessage() {
+  let messageInput = document.getElementById("message-input");
+  let message = messageInput.value;
+  createChatBox(name, message);
+  messageInput.value = "";
+  postMessage(name, message);
+}
+
+
+function postMessage(name, message) {
+  fetch(server_url + "/message", {
+    method: "POST",
+    headers: {
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify(
+      {
+        user: name,
+        message: message
+      }
+    )
+  })
+}
 
 function getMessages() {
   fetch(server_url + "/messages")
     .then(response => {
       if(!response.ok){
-        throw new Error("Could not fetch resource");
+        throw new Error("Error, Response status: " + response.status);
       }
       return response.json();
     })
