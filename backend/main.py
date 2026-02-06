@@ -1,12 +1,20 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import datetime
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
+from pathlib import Path
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+# --- Improved Configuration ---
+# Get the absolute path to the directory containing this script
+SCRIPT_DIR = Path(__file__).parent
+# Define the database path relative to the script directory
+DATABASE_PATH = SCRIPT_DIR / "chat.db"
 
 
 def init_db():
-    with sqlite3.connect("chat.db") as conn:
+    with sqlite3.connect(DATABASE_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS messages (
@@ -24,6 +32,8 @@ init_db()
 
 app = FastAPI()
 
+# For production, you should restrict this to your frontend's actual domain
+# Example: allow_origins=["http://localhost:3000", "https://your-frontend-domain.com"]
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
@@ -94,7 +104,6 @@ async def websocket_endpoint(websocket: WebSocket):
 
         while True:
             data = await websocket.receive_json()
-            print(data)
             save_message(data["user"], data["message"])
             await manager.broadcast(data)
     except WebSocketDisconnect:
@@ -106,7 +115,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 def save_message(user, message):
-    with sqlite3.connect("chat.db") as conn:
+    with sqlite3.connect(DATABASE_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO messages (user, message) VALUES(?, ?)", (user, message)
@@ -115,7 +124,7 @@ def save_message(user, message):
 
 
 def load_messages():
-    with sqlite3.connect("chat.db") as conn:
+    with sqlite3.connect(DATABASE_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT user, message FROM messages ORDER BY id DESC LIMIT 50")
         rows = cursor.fetchall()

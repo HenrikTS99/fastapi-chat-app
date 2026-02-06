@@ -1,0 +1,11 @@
+services:
+  backend:
+    build: ./backend
+    container_name: chat-app-backend
+    ports:
+      - "8000:8000"
+  frontend:
+    build: ./frontend
+    container_name: chat-app-frontend
+    ports:
+      - "5500:5500"
